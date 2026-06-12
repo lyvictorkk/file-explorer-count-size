@@ -1,10 +1,14 @@
-# Obsidian File Explorer Count
+# Obsidian File Explorer Count & Size
+
+> This is a fork of [ozntel/file-explorer-note-count](https://github.com/ozntel/file-explorer-note-count) that additionally shows the total size of files under each folder (e.g. `12 · 3.4 MB`).
 
 ## Brief Explanation
 
 -   This plugin helps you to see the number of elements you have under all available folders within your file explorer.
 
 -   Counts will include total number of all elements under a folder and its sub-folders.
+
+-   Next to the count, the total size of the files under each folder is displayed (e.g. `12 · 3.4 MB`). It follows the same extension filter as the count and can be turned off with the `Show Folder Size` setting.
 
 -   By default, expanded folders won't have the number of notes in case they have sub-folders.
 

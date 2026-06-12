@@ -5,6 +5,7 @@ import FileExplorerNoteCount from './main';
 
 export interface FENoteCountSettings {
     showAllNumbers: boolean;
+    showFolderSize: boolean;
     filterList: string[];
     blacklist: boolean;
     addRootFolder: boolean;
@@ -12,6 +13,7 @@ export interface FENoteCountSettings {
 
 export const DEFAULT_SETTINGS: FENoteCountSettings = {
     showAllNumbers: false,
+    showFolderSize: true,
     filterList: ['md'],
     blacklist: false,
     addRootFolder: false,
@@ -56,6 +58,17 @@ export class FENoteCountSettingTab extends PluginSettingTab {
                     document.body.toggleClass('oz-show-all-num', value);
                     this.plugin.settings.showAllNumbers = value;
                     this.plugin.saveSettings();
+                })
+            );
+
+        new Setting(containerEl)
+            .setName('Show Folder Size')
+            .setDesc('Show the total size of files under each folder next to the note count')
+            .addToggle((toggle) =>
+                toggle.setValue(this.plugin.settings.showFolderSize).onChange((value) => {
+                    this.plugin.settings.showFolderSize = value;
+                    this.plugin.saveSettings();
+                    this.plugin.reloadCount();
                 })
             );
 

@@ -30,5 +30,7 @@ export class VaultHandler {
         this.plugin.registerEvent(this.vault.on('create', this.handler));
         this.plugin.registerEvent(this.vault.on('rename', this.handler));
         this.plugin.registerEvent(this.vault.on('delete', this.handler));
+        // file size changes without create/delete, e.g. on edit
+        this.plugin.registerEvent(this.vault.on('modify', this.handler));
     };
 }

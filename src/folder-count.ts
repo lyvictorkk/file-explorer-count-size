@@ -2,15 +2,44 @@ import './styles/folder-count.css';
 
 import FileExplorerNoteCount from 'main';
 import { AbstractFileFilter, getParentPath, isFolder, isParent, iterateItems, withSubfolderClass } from 'misc';
-import { AFItem, FolderItem, TFolder } from 'obsidian';
+import { AFItem, FolderItem, TFile, TFolder } from 'obsidian';
 
-const countFolderChildren = (folder: TFolder, filter: AbstractFileFilter) => {
+interface FolderStats {
+    count: number;
+    size: number;
+}
+
+const countFolderChildren = (folder: TFolder, filter: AbstractFileFilter): FolderStats => {
     let count = 0;
+    let size = 0;
     for (const af of folder.children) {
-        if (filter(af)) count++;
-        if (af instanceof TFolder) count += countFolderChildren(af, filter);
+        if (filter(af)) {
+            count++;
+            if (af instanceof TFile) size += af.stat.size;
+        }
+        if (af instanceof TFolder) {
+            const sub = countFolderChildren(af, filter);
+            count += sub.count;
+            size += sub.size;
+        }
     }
-    return count;
+    return { count, size };
+};
+
+const formatSize = (bytes: number): string => {
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let i = 0;
+    let value = bytes;
+    while (value >= 1024 && i < units.length - 1) {
+        value /= 1024;
+        i++;
+    }
+    return (i === 0 ? value.toString() : value.toFixed(1)) + ' ' + units[i];
+};
+
+const getDisplayText = (folder: TFolder, plugin: FileExplorerNoteCount): string => {
+    const { count, size } = countFolderChildren(folder, plugin.fileFilter);
+    return plugin.settings.showFolderSize ? `${count} · ${formatSize(size)}` : count.toString();
 };
 
 /** filter out all path that is the parent of existing path */
@@ -44,7 +73,7 @@ export const updateCount = (targetList: string[], plugin: FileExplorerNoteCount)
         getAllParents(path, set);
     }
     // set count of path
-    const { fileExplorer, fileFilter } = plugin;
+    const { fileExplorer } = plugin;
     if (!fileExplorer) {
         console.error('fileExplorer missing');
         return;
@@ -52,7 +81,7 @@ export const updateCount = (targetList: string[], plugin: FileExplorerNoteCount)
     for (const path of set) {
         // check if path available
         if (!fileExplorer.fileItems[path]) continue;
-        setCount(fileExplorer.fileItems[path] as FolderItem, fileFilter);
+        setCount(fileExplorer.fileItems[path] as FolderItem, plugin);
     }
     // Update root separately
     if (plugin.rootFolderEl && plugin.settings.addRootFolder) {
@@ -66,8 +95,8 @@ const setupRootCount = (plugin: FileExplorerNoteCount) => {
     if (plugin.rootFolderEl) {
         let rootFolderElChildren = plugin.rootFolderEl.children;
         if (rootFolderElChildren && rootFolderElChildren.length > 0) {
-            let totalCount = countFolderChildren(plugin.app.vault.getAbstractFileByPath('/') as TFolder, plugin.fileFilter);
-            rootFolderElChildren[0].setAttr('data-count', totalCount.toString());
+            const rootFolder = plugin.app.vault.getAbstractFileByPath('/') as TFolder;
+            rootFolderElChildren[0].setAttr('data-count', getDisplayText(rootFolder, plugin));
         }
     }
 };
@@ -81,14 +110,13 @@ export const setupCount = (plugin: FileExplorerNoteCount, revert = false) => {
     iterateItems(plugin.fileExplorer.fileItems, (item: AFItem) => {
         if (!isFolder(item)) return;
         if (revert) removeCount(item);
-        else setCount(item, plugin.fileFilter);
+        else setCount(item, plugin);
     });
 };
 
-export const setCount = (item: FolderItem, filter: AbstractFileFilter) => {
+export const setCount = (item: FolderItem, plugin: FileExplorerNoteCount) => {
     // if (item.file.isRoot()) return;
-    const count = countFolderChildren(item.file, filter);
-    item.selfEl.dataset['count'] = count.toString();
+    item.selfEl.dataset['count'] = getDisplayText(item.file, plugin);
     item.selfEl.toggleClass(withSubfolderClass, Array.isArray(item.file.children) && item.file.children.some((af) => af instanceof TFolder));
 };
 
