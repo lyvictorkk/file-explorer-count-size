@@ -17,3 +17,6 @@ styles.css
 data.json
 
 .DS_Store
+
+# claude code
+.claude
